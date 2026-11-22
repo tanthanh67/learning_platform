@@ -15,7 +15,7 @@ app.use(
   "/api-docs",
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: "Backend Basic API Docs",
+    customSiteTitle: "Learning Platform API Docs",
     swaggerOptions: {
       displayRequestDuration: true,
       validatorUrl: null,
