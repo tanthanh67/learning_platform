@@ -41,7 +41,7 @@ paths:
       tags: [Auth]
       operationId: getMe
       summary: Lấy thông tin tài khoản hiện tại
-      description: Cần access token hợp lệ; không yêu cầu quyền quản trị người dùng.
+      description: Cần access token hợp lệ và phiên đăng nhập tương ứng còn hoạt động; không yêu cầu quyền quản trị người dùng.
       responses:
         '200': { $ref: '#/components/responses/AuthUser' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -68,7 +68,7 @@ paths:
       tags: [Auth]
       operationId: logout
       summary: Đăng xuất phiên hiện tại
-      description: Đọc cookie refresh, thu hồi đúng phiên trong database rồi xóa cookie. Không nhận refreshToken trong body và không cần access token. Cần header X-Requested-With; thiếu hoặc sai header trả 403 trước khi xử lý cookie. Gọi lại bằng cùng refresh token còn hạn vẫn trả 200 khi phiên đã bị thu hồi hoặc không còn tồn tại; sau khi trình duyệt xóa cookie, gọi lại sẽ trả 401. Phiên khác không bị ảnh hưởng. Access token đã cấp vẫn dùng được đến khi hết hạn; frontend cần xóa access token và thông tin user. Cookie thiếu, sai, hết hạn hoặc token không có sessionId trả 401. Lỗi database trả 500; controller vẫn gửi header xóa cookie kể cả khi trả 401 hoặc 500.
+      description: Đọc cookie refresh, thu hồi đúng phiên trong database rồi xóa cookie. Không nhận refreshToken trong body và không cần access token. Cần header X-Requested-With; thiếu hoặc sai header trả 403 trước khi xử lý cookie. Gọi lại bằng cùng refresh token còn hạn vẫn trả 200 khi phiên đã bị thu hồi hoặc không còn tồn tại; sau khi trình duyệt xóa cookie, gọi lại sẽ trả 401. Phiên khác không bị ảnh hưởng. Mọi access token thuộc phiên vừa thu hồi bị từ chối ở request tiếp theo; frontend vẫn cần xóa access token và thông tin user. Cookie thiếu, sai, hết hạn hoặc token không có sessionId trả 401. Lỗi database trả 500; controller vẫn gửi header xóa cookie kể cả khi trả 401 hoặc 500.
       security:
         - refreshCookie: []
       parameters:
