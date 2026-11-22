@@ -1,15 +1,38 @@
 import express from "express";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./src/config/swagger.config.js";
+import router from "./src/routes/route.js";
+import errorHandler from "./src/middlewares/errorHandler.js";
+import { connectDB } from "./src/config/db.config.js";
+import { config } from "./src/config/env.config.js";
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("<a href='/about'>Hello</a>");
-});
+app.use(express.json());
 
-app.get("/about", (req, res) => {
-  res.send("Hello, I'm Tan");
-});
+app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "Learning Platform API Docs",
+    swaggerOptions: {
+      displayRequestDuration: true,
+      validatorUrl: null,
+      withCredentials: true,
+    },
+  }),
+);
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+app.use("/api", router);
+app.use(errorHandler);
+
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(config.app.port, () => {
+    console.log(`Server is running on port ${config.app.port}`);
+  });
+};
+
+startServer();

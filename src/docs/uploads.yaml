@@ -1,0 +1,24 @@
+paths:
+  /upload/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    delete:
+      tags: [Uploads]
+      operationId: deleteUpload
+      summary: Xóa file đã tải lên
+      description: Chủ file có thể xóa file độc lập theo ID. Tài liệu gắn với bài học trả về 403 tại endpoint này.
+      responses:
+        '200':
+          description: Đã xóa file.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+              example:
+                statusCode: 200
+                message: Upload deleted successfully
+                data: null
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }

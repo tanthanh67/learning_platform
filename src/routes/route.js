@@ -1,0 +1,24 @@
+import { Router } from "express";
+import userRouter from "./user.route.js";
+import authRouter from "./auth.route.js";
+import classRouter from "./class.route.js";
+import uploadRouter from "./upload.route.js";
+import classMembersRouter from "./classMembers.route.js";
+import lessonRouter from "./lesson.route.js";
+import assignmentRouter from "./assignment.route.js";
+import submissionRouter from "./submission.route.js";
+import { authenticateToken } from "../middlewares/auth.middleware.js";
+
+const router = Router();
+
+router.use("/auth", authRouter);
+router.use(authenticateToken);
+router.use("/users", userRouter);
+router.use("/classes", classRouter);
+router.use("/upload", uploadRouter);
+router.use("/classes/:id/members", classMembersRouter);
+router.use(lessonRouter);
+router.use(assignmentRouter);
+router.use(submissionRouter);
+
+export default router;

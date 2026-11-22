@@ -1,0 +1,81 @@
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Đăng ký tài khoản
+      description: Tạo người dùng mới với vai trò MEMBER. Mật khẩu ít nhất 6 ký tự.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/UserCreated' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Đăng nhập
+      description: Tạo một phiên đăng nhập riêng trong database. JSON chỉ trả thông tin người dùng và accessToken; refresh token được đặt trong cookie refresh có HttpOnly, SameSite=Lax, thời hạn khớp với token. Dùng accessToken trong Authorize để gọi các API được bảo vệ. Swagger gửi header X-Requested-With theo giá trị mặc định; trình duyệt tự lưu cookie.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AuthRequestHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Login' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: Lấy thông tin tài khoản hiện tại
+      description: Cần access token hợp lệ và phiên đăng nhập tương ứng còn hoạt động; không yêu cầu quyền quản trị người dùng.
+      responses:
+        '200': { $ref: '#/components/responses/AuthUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Làm mới access token
+      description: Đọc refresh token từ cookie refresh do trình duyệt tự gửi sau login. Không nhận refreshToken trong body và không cần access token. Phiên phải tồn tại, chưa hết hạn và chưa bị thu hồi. Access token mới giữ nguyên sessionId; refresh token không được thay mới. Cần header X-Requested-With. Trong Swagger, login trước trên cùng host rồi gọi API này, không nhập cookie trong Authorize.
+      security:
+        - refreshCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AuthRequestHeader'
+      responses:
+        '200': { $ref: '#/components/responses/AccessToken' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Đăng xuất phiên hiện tại
+      description: Đọc cookie refresh, thu hồi đúng phiên trong database rồi xóa cookie. Không nhận refreshToken trong body và không cần access token. Cần header X-Requested-With; thiếu hoặc sai header trả 403 trước khi xử lý cookie. Gọi lại bằng cùng refresh token còn hạn vẫn trả 200 khi phiên đã bị thu hồi hoặc không còn tồn tại; sau khi trình duyệt xóa cookie, gọi lại sẽ trả 401. Phiên khác không bị ảnh hưởng. Mọi access token thuộc phiên vừa thu hồi bị từ chối ở request tiếp theo; frontend vẫn cần xóa access token và thông tin user. Cookie thiếu, sai, hết hạn hoặc token không có sessionId trả 401. Lỗi database trả 500; controller vẫn gửi header xóa cookie kể cả khi trả 401 hoặc 500.
+      security:
+        - refreshCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AuthRequestHeader'
+      responses:
+        '200': { $ref: '#/components/responses/Logout' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
