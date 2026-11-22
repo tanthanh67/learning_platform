@@ -1,11 +1,13 @@
 import { Router } from "express";
 import * as lessonController from "../controllers/lesson.controller.js";
 import {
+  attachmentIdParamRules,
   createLessonRules,
   idParamRules,
   updateLessonRules,
   validate,
 } from "../middlewares/validate.js";
+import { uploadDocs } from "../middlewares/upload.middleware.js";
 import { requirePermission } from "../middlewares/permission.middleware.js";
 
 const router = Router();
@@ -51,6 +53,22 @@ router.post(
   requirePermission("LESSON_COMPLETE"),
   validate(idParamRules),
   lessonController.completeLesson,
+);
+
+router.post(
+  "/lessons/:id/attachments",
+  requirePermission("LESSON_UPDATE"),
+  validate(idParamRules),
+  lessonController.requireAttachmentMentor,
+  uploadDocs.single("file"),
+  lessonController.uploadLessonAttachment,
+);
+
+router.get(
+  "/lessons/:id/attachments/:attachmentId/url",
+  requirePermission("LESSON_READ"),
+  validate([...idParamRules, ...attachmentIdParamRules]),
+  lessonController.getLessonAttachmentUrl,
 );
 
 export default router;

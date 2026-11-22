@@ -60,3 +60,32 @@ export const getClassProgress = catchAsync(async (req, res) => {
 
   return sendSuccess(res, 200, "Progress retrieved successfully", progress);
 });
+
+export const requireAttachmentMentor = catchAsync(async (req, res, next) => {
+  res.locals.lesson = await lessonService.getLessonForAttachmentUpload(
+    req.params.id,
+    req.user.id,
+  );
+  next();
+});
+
+export const uploadLessonAttachment = catchAsync(async (req, res) => {
+  const attachment = await lessonService.uploadLessonAttachment(
+    res.locals.lesson.id,
+    req.user.id,
+    req.file,
+  );
+
+  return sendSuccess(res, 201, "Lesson attachment uploaded", attachment);
+});
+
+export const getLessonAttachmentUrl = catchAsync(async (req, res) => {
+  const download = await lessonService.getLessonAttachmentUrl(
+    req.params.id,
+    req.params.attachmentId,
+    req.user.id,
+  );
+
+  res.set("Cache-Control", "no-store");
+  return sendSuccess(res, 200, "Download URL generated", download);
+});

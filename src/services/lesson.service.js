@@ -1,6 +1,12 @@
-import { ConflictError, NotFoundError } from "../core/error.response.js";
+import {
+  ConflictError,
+  NotFoundError,
+  BadRequestError,
+} from "../core/error.response.js";
 import * as lessonRepository from "../repository/lesson.repository.js";
 import * as lessonProgressRepository from "../repository/lessonProgress.repository.js";
+import * as uploadRepository from "../repository/upload.repository.js";
+import * as uploadService from "./upload.service.js";
 import {
   ensureCanView,
   ensureMember,
@@ -35,7 +41,11 @@ export const getLessonsByClass = async (classId, userId) => {
   return lessonRepository.findByClassId(classId, userId);
 };
 
-export const createLesson = async (classId, userId, { title, content, order }) => {
+export const createLesson = async (
+  classId,
+  userId,
+  { title, content, order },
+) => {
   const access = await getClassAccess(classId, userId);
   ensureMentor(access);
 
@@ -54,10 +64,71 @@ export const getLessonById = async (lessonId, userId) => {
   const { lesson, access } = await findLessonWithAccess(lessonId, userId);
   ensureCanView(access);
 
+  const attachments = await lessonRepository.findMetadataByLessonId(lesson.id);
+  return { ...lesson, attachments };
+};
+
+export const getLessonForAttachmentUpload = async (lessonId, userId) => {
+  const { lesson, access } = await findLessonWithAccess(lessonId, userId);
+  ensureMentor(access);
   return lesson;
 };
 
-export const updateLesson = async (lessonId, userId, { title, content, order }) => {
+export const uploadLessonAttachment = async (lessonId, userId, file) => {
+  if (!file?.size) {
+    throw new BadRequestError("A non-empty file is required");
+  }
+
+  const { key } = await uploadService.uploadR2(file, "lessons");
+
+  try {
+    const upload = await uploadRepository.create({
+      key,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      uploadedBy: userId,
+      lessonId,
+    });
+
+    return {
+      id: upload.id,
+      original_name: upload.original_name,
+      mime_type: upload.mime_type,
+      size_bytes: upload.size_bytes,
+      created_at: upload.created_at,
+    };
+  } catch (error) {
+    try {
+      await uploadService.deleteImgFromR2(key);
+    } catch (cleanupError) {
+      console.error("Failed to clean up lesson attachment", cleanupError);
+    }
+    throw error;
+  }
+};
+
+export const getLessonAttachmentUrl = async (
+  lessonId,
+  attachmentId,
+  userId,
+) => {
+  const { lesson, access } = await findLessonWithAccess(lessonId, userId);
+  ensureCanView(access);
+
+  const upload = await uploadRepository.findById(attachmentId);
+  if (!upload || upload.lesson_id !== lesson.id) {
+    throw new NotFoundError("Attachment not found in this lesson");
+  }
+
+  return uploadService.createFileDownload(upload);
+};
+
+export const updateLesson = async (
+  lessonId,
+  userId,
+  { title, content, order },
+) => {
   const { lesson, access } = await findLessonWithAccess(lessonId, userId);
   ensureMentor(access);
 
@@ -95,7 +166,9 @@ export const getClassProgress = async (classId, userId) => {
     await lessonProgressRepository.countByClass(classId, userId);
 
   const progress =
-    totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+    totalLessons === 0
+      ? 0
+      : Math.round((completedLessons / totalLessons) * 100);
 
   return { totalLessons, completedLessons, progress };
 };

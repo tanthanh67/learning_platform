@@ -8,6 +8,7 @@ insert into permissions (name, description) values
 	('USER_CREATE',         'Tạo user'),
 	('USER_UPDATE',         'Cập nhật user'),
 	('USER_DELETE',         'Xóa user'),
+	('USER_ROLE_MANAGE',    'Xem, cấp và thu hồi vai trò của user'),
 
 	('CLASS_READ_ALL',      'Xem tất cả class'),
 	('CLASS_READ_OWN',      'Xem class mình tham gia hoặc làm mentor'),
@@ -42,7 +43,7 @@ insert into role_permissions (role_id, permission_id)
 select r.id, p.id
 from roles r
 join permissions p on p.name in (
-	'USER_READ', 'USER_CREATE', 'USER_UPDATE', 'USER_DELETE',
+	'USER_READ', 'USER_CREATE', 'USER_UPDATE', 'USER_DELETE', 'USER_ROLE_MANAGE',
 	'CLASS_READ_ALL', 'CLASS_CREATE', 'CLASS_UPDATE', 'CLASS_DELETE', 'CLASS_ASSIGN_MENTOR',
 	'CLASS_MEMBER_READ', 'CLASS_MEMBER_ADD', 'CLASS_MEMBER_REMOVE',
 	'LESSON_READ', 'ASSIGNMENT_READ', 'SUBMISSION_READ_CLASS'

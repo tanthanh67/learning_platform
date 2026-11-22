@@ -8,11 +8,9 @@ export const uploadImage = catchAsync(async (req, res) => {
   return sendSuccess(res, 201, "Image uploaded successfully", result);
 });
 
-export const deleteImage = catchAsync(async (req, res) => {
-  const { key } = req.body;
-
-  await uploadService.deleteImgFromR2(key);
-  return sendSuccess(res, 200, "Image deleted successfully");
+export const deleteUpload = catchAsync(async (req, res) => {
+  await uploadService.deleteUpload(req.params.id, req.user.id);
+  return sendSuccess(res, 200, "Upload deleted successfully");
 });
 
 export const uploadDocuments = catchAsync(async (req, res) => {

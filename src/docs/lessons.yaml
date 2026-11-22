@@ -54,9 +54,11 @@ paths:
       tags: [Lessons]
       operationId: getLessonById
       summary: Lấy bài học theo ID
-      description: 'Quyền: LESSON_READ. Cần là mentor, thành viên của lớp hoặc có CLASS_READ_ALL.'
+      description: >-
+        Cần quyền LESSON_READ và phải là mentor, thành viên của lớp hoặc có CLASS_READ_ALL.
+        Trả về thông tin bài học và danh sách tài liệu đính kèm.
       responses:
-        '200': { $ref: '#/components/responses/Lesson' }
+        '200': { $ref: '#/components/responses/LessonDetail' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -87,6 +89,56 @@ paths:
       description: 'Quyền: LESSON_DELETE và phải là mentor của lớp. Trả về bài học đã xóa.'
       responses:
         '200': { $ref: '#/components/responses/Lesson' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /lessons/{id}/attachments:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [Lessons]
+      operationId: uploadLessonAttachment
+      summary: Đính kèm tài liệu vào bài học
+      description: >-
+        Cần quyền LESSON_UPDATE và phải là mentor của lớp.
+        Mỗi yêu cầu nhận một file PDF, DOC hoặc DOCX tối đa 20 MB.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201': { $ref: '#/components/responses/LessonAttachmentCreated' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /lessons/{id}/attachments/{attachmentId}/url:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - name: attachmentId
+        in: path
+        required: true
+        description: ID tài liệu đính kèm của bài học.
+        schema: { type: integer, minimum: 1, maximum: 2147483647 }
+    get:
+      tags: [Lessons]
+      operationId: getLessonAttachmentUrl
+      summary: Lấy link tải tài liệu của bài học
+      description: >-
+        Cần quyền LESSON_READ và phải là mentor, thành viên của lớp hoặc có CLASS_READ_ALL.
+        Link tải có hiệu lực trong 5 phút.
+      responses:
+        '200': { $ref: '#/components/responses/LessonAttachmentUrl' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }

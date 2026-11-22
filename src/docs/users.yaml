@@ -70,11 +70,67 @@ paths:
       tags: [Users]
       operationId: deleteUser
       summary: Xóa người dùng
-      description: 'Quyền: USER_DELETE. Trả về thông tin người dùng đã xóa.'
+      description: Yêu cầu quyền USER_DELETE. Trả về thông tin người dùng đã xóa.
       responses:
         '200': { $ref: '#/components/responses/User' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/LastAdmin' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /users/roles:
+    get:
+      tags: [Users]
+      operationId: getRoles
+      summary: Xem danh mục vai trò hệ thống
+      description: Yêu cầu quyền USER_ROLE_MANAGE.
+      responses:
+        '200': { $ref: '#/components/responses/RoleList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /users/{id}/roles:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Users]
+      operationId: getUserRoles
+      summary: Xem vai trò của người dùng
+      description: Yêu cầu quyền USER_ROLE_MANAGE.
+      responses:
+        '200': { $ref: '#/components/responses/UserRoles' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /users/{id}/roles/{roleName}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - { $ref: '#/components/parameters/RoleName' }
+    put:
+      tags: [Users]
+      operationId: grantUserRole
+      summary: Cấp vai trò cho người dùng
+      description: Yêu cầu quyền USER_ROLE_MANAGE. Trả về danh sách vai trò hiện tại, kể cả khi người dùng đã có vai trò này.
+      responses:
+        '200': { $ref: '#/components/responses/UserRoles' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      tags: [Users]
+      operationId: revokeUserRole
+      summary: Thu hồi vai trò của người dùng
+      description: Yêu cầu quyền USER_ROLE_MANAGE. Trả về danh sách vai trò hiện tại, kể cả khi người dùng chưa có vai trò này.
+      responses:
+        '200': { $ref: '#/components/responses/UserRoles' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/LastAdmin' }
         '500': { $ref: '#/components/responses/InternalServerError' }

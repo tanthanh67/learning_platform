@@ -25,7 +25,7 @@ docker compose up --build -d --wait
 - `server`: đợi PostgreSQL sẵn sàng, chạy `npm run db:setup` (migration rồi seed) trước khi khởi động backend. Lỗi migration/seed sẽ ngăn backend khởi động.
 - Giữ nguyên SQL trong `db/init`; Compose không còn mount thư mục này vào PostgreSQL để tránh có hai cơ chế chạy SQL.
 - Healthcheck của backend kiểm tra OpenAPI JSON.
-- Swagger bao gồm 34 API; không có tài liệu cho API upload file.
+- Swagger mô tả luồng tải lên và lấy link tải tài liệu của bài học, cùng thao tác xóa file độc lập theo ID.
 
 ## Truy cập
 
@@ -46,7 +46,7 @@ Swagger dùng server tương đối `/api`, nên **Try it out** gọi đúng hos
 
 ## Đăng nhập, refresh và logout
 
-Mỗi lần login tạo một phiên trong `auth_sessions`. Access token và refresh token cùng mang `sessionId`. Access token mặc định hết hạn sau 15 phút (`JWT_EXPIRES_IN=15m`); refresh token mặc định 7 ngày (`JWT_REFRESH_EXPIRES_IN=7d`). Giá trị đã cấu hình trong `.env` được ưu tiên. Thời hạn phiên khớp với refresh token.
+Mỗi lần login tạo một phiên trong `auth_sessions`. Access token và refresh token cùng mang `sessionId`. Access token mặc định hết hạn sau 15 phút (`JWT_EXPIRES_IN=15m`); refresh token mặc định 7 ngày (`JWT_REFRESH_EXPIRES_IN=7d`). Giá trị đã cấu hình trong `.env` được ưu tiên. Thời hạn phiên khớp với refresh token. Mỗi request được bảo vệ kiểm tra phiên này còn tồn tại, chưa hết hạn và chưa bị thu hồi.
 
 Login chỉ trả `data.user` và `data.accessToken` trong JSON. Refresh token được đặt trong cookie `refresh` với `HttpOnly`, `SameSite=Lax`, `Path=/` và `Expires` khớp với thời hạn token. Frontend không đọc hoặc lưu refresh token vào localStorage. Service vẫn tạo/thu hồi phiên trong `auth_sessions` như trước.
 
@@ -87,10 +87,10 @@ if (!logoutResponse.ok) throw new Error("Server chưa xác nhận thu hồi phi�
 
 - Refresh/logout không cần body hoặc access token; chỉ đọc cookie, không dùng `refreshToken` trong JSON làm phương án dự phòng.
 - Refresh chỉ cấp access token khi phiên còn hạn và chưa bị thu hồi; refresh token không đổi.
-- Logout thu hồi đúng phiên trong database rồi xóa cookie. Phiên khác không bị ảnh hưởng. Gửi lại cùng cookie còn hạn vẫn trả `200` nếu phiên đã bị thu hồi hoặc không còn tồn tại; gọi lại sau khi trình duyệt đã xóa cookie trả `401`.
+- Logout thu hồi đúng phiên trong database rồi xóa cookie. Phiên khác không bị ảnh hưởng. Access token thuộc phiên vừa thu hồi bị từ chối ở request tiếp theo. Gửi lại cùng cookie còn hạn vẫn trả `200` nếu phiên đã bị thu hồi hoặc không còn tồn tại; gọi lại sau khi trình duyệt đã xóa cookie trả `401`.
 - Cookie thiếu, sai, hết hạn, trùng tên hoặc token không có `sessionId` trả `401`. Lỗi database trả `500`, không báo thành công; controller logout vẫn gửi header xóa cookie khi trả `401` hoặc `500`.
 - Trong Swagger: login trước, giữ giá trị mặc định của header `X-Requested-With`, sau đó gọi refresh/logout. Trình duyệt tự lưu/gửi cookie; không nhập cookie trong **Authorize**. Các API dùng Bearer vẫn cần `accessToken` trong **Authorize**, và cần xóa token tại đó khi logout. Postman cũng cần header này và bật cookie jar.
-- Access token đã cấp vẫn dùng được đến khi hết hạn. Middleware không truy vấn phiên ở mỗi request. Đăng nhập lại sau khi chuyển đổi để nhận cookie và phiên phù hợp.
+- Middleware kiểm tra `sessionId` trong `auth_sessions` ở mỗi request được bảo vệ. Đăng nhập lại sau khi chuyển đổi để nhận cookie và phiên phù hợp.
 - Migration `04_create_auth_sessions.sql` phải được áp dụng trước khi dùng login; Compose tự chạy migrations khi khởi động. Cách tổ chức SQL không thay đổi.
 
 Compose mặc định `COOKIE_SECURE=false` để chạy HTTP localhost. Khi triển khai HTTPS, đặt `COOKIE_SECURE=true` trong `.env` rồi build/chạy lại. Chạy Node trực tiếp sẽ mặc định bật Secure khi `NODE_ENV=production`; chỉ chấp nhận giá trị `true` hoặc `false` nếu cấu hình biến này.

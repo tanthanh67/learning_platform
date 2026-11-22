@@ -1,4 +1,4 @@
-import { validationResult, body, param } from "express-validator";
+import { validationResult, body, param, query } from "express-validator";
 import { BadRequestError } from "../core/error.response.js";
 
 export const validate = (rules) => {
@@ -52,8 +52,24 @@ export const idParamRules = [
     .trim()
     .notEmpty()
     .withMessage("ID is required")
-    .isInt({ min: 1 })
-    .withMessage("ID must be a positive integer")
+    .isInt({ min: 1, max: 2147483647 })
+    .withMessage("ID must be an integer between 1 and 2147483647")
+    .bail()
+    .toInt(),
+];
+
+export const userRoleParamRules = [
+  ...idParamRules,
+  param("roleName")
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Role name must be between 1 and 50 characters"),
+];
+
+export const attachmentIdParamRules = [
+  param("attachmentId")
+    .isInt({ min: 1, max: 2147483647 })
+    .withMessage("Attachment ID must be a positive integer")
+    .bail()
     .toInt(),
 ];
 
@@ -156,7 +172,11 @@ export const loginRules = [
 ];
 
 // Only accept real calendar dates in YYYY-MM-DD form (rejects 2026-02-30 and date-times).
-const DATE_FORMAT = { format: "YYYY-MM-DD", strictMode: true, delimiters: ["-"] };
+const DATE_FORMAT = {
+  format: "YYYY-MM-DD",
+  strictMode: true,
+  delimiters: ["-"],
+};
 
 // endDate must not be before startDate when both are in the request body.
 // When only one of them is sent (update), the service compares against the stored value.
@@ -167,6 +187,17 @@ const isNotBeforeStartDate = (endDate, { req }) => {
   }
   return true;
 };
+
+const mentorIdRule = () =>
+  body("mentorId")
+    .optional()
+    .custom((value) => typeof value === "number" || typeof value === "string")
+    .withMessage("ID của mentor phải là số nguyên dương")
+    .bail()
+    .isInt({ min: 1, max: 2147483647 })
+    .withMessage("ID của mentor phải là số nguyên dương")
+    .bail()
+    .toInt();
 
 export const createClassRules = [
   body("name")
@@ -201,10 +232,7 @@ export const createClassRules = [
     .custom(isNotBeforeStartDate)
     .withMessage("Ngày kết thúc không được trước ngày bắt đầu"),
 
-  body("mentorId")
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage("ID của mentor phải là số nguyên dương"),
+  mentorIdRule(),
 ];
 
 export const updateClassRules = [
@@ -231,10 +259,7 @@ export const updateClassRules = [
     .bail()
     .custom(isNotBeforeStartDate)
     .withMessage("Ngày kết thúc không được trước ngày bắt đầu"),
-  body("mentorId")
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage("ID của mentor phải là số nguyên dương"),
+  mentorIdRule(),
 ];
 
 export const createLessonRules = [
@@ -246,10 +271,7 @@ export const createLessonRules = [
     .isLength({ max: 255 })
     .withMessage("Tiêu đề không được vượt quá 255 ký tự"),
 
-  body("content")
-    .optional()
-    .isString()
-    .withMessage("Nội dung phải là chuỗi"),
+  body("content").optional().isString().withMessage("Nội dung phải là chuỗi"),
 
   body("order")
     .notEmpty()
@@ -270,10 +292,7 @@ export const updateLessonRules = [
     .isLength({ max: 255 })
     .withMessage("Tiêu đề không được vượt quá 255 ký tự"),
 
-  body("content")
-    .optional()
-    .isString()
-    .withMessage("Nội dung phải là chuỗi"),
+  body("content").optional().isString().withMessage("Nội dung phải là chuỗi"),
 
   body("order")
     .optional()
@@ -291,10 +310,7 @@ export const createAssignmentRules = [
     .isLength({ max: 255 })
     .withMessage("Tiêu đề không được vượt quá 255 ký tự"),
 
-  body("description")
-    .optional()
-    .isString()
-    .withMessage("Mô tả phải là chuỗi"),
+  body("description").optional().isString().withMessage("Mô tả phải là chuỗi"),
 
   body("deadline")
     .notEmpty()
@@ -322,10 +338,7 @@ export const updateAssignmentRules = [
     .isLength({ max: 255 })
     .withMessage("Tiêu đề không được vượt quá 255 ký tự"),
 
-  body("description")
-    .optional()
-    .isString()
-    .withMessage("Mô tả phải là chuỗi"),
+  body("description").optional().isString().withMessage("Mô tả phải là chuỗi"),
 
   body("deadline")
     .optional()
@@ -374,4 +387,9 @@ export const reviewSubmissionRules = [
     .isString()
     .withMessage("Nhận xét phải là chuỗi")
     .trim(),
+];
+
+export const classListQueryRules = [
+  query("page").optional().isString().bail().isInt({ min: 1, max: 2147483647 }),
+  query("limit").optional().isString().bail().isInt({ min: 1, max: 100 }),
 ];

@@ -1,7 +1,7 @@
 import pool from "../config/db.config.js";
 
-export const hasPermission = async (userId, permission) => {
-  const result = await pool.query(
+export const hasPermission = async (userId, permission, db = pool) => {
+  const result = await db.query(
     `
             SELECT EXISTS (
                 SELECT 1 

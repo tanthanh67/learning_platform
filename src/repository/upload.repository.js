@@ -6,22 +6,29 @@ export const create = async ({
   mimeType,
   size,
   uploadedBy,
+  lessonId = null,
 }) => {
-  const result = await pool.query(
+  const { rows } = await pool.query(
     `
-        INSERT INTO uploads (r2_key, original_name, mime_type, size_bytes, uploaded_by)
-        VALUES ($1, $2, $3, $4, $5) 
-        RETURNING *
+      INSERT INTO uploads (
+        r2_key, original_name, mime_type, size_bytes, uploaded_by, lesson_id
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
     `,
-    [key, originalName, mimeType, size, uploadedBy],
+    [key, originalName, mimeType, size, uploadedBy, lessonId],
   );
 
-  return result.rows[0];
+  return rows[0];
 };
 
 export const findById = async (id) => {
   const result = await pool.query("SELECT * FROM uploads WHERE id = $1", [id]);
   return result.rows[0] || null;
+};
+
+export const deleteById = async (id) => {
+  await pool.query("DELETE FROM uploads WHERE id = $1", [id]);
 };
 
 export const createMany = async (files) => {
