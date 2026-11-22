@@ -52,8 +52,17 @@ export const idParamRules = [
     .trim()
     .notEmpty()
     .withMessage("ID is required")
-    .isInt({ min: 1 })
-    .withMessage("ID must be a positive integer")
+    .isInt({ min: 1, max: 2147483647 })
+    .withMessage("ID must be an integer between 1 and 2147483647")
+    .bail()
+    .toInt(),
+];
+
+export const attachmentIdParamRules = [
+  param("attachmentId")
+    .isInt({ min: 1, max: 2147483647 })
+    .withMessage("Attachment ID must be a positive integer")
+    .bail()
     .toInt(),
 ];
 

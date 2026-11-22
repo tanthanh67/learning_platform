@@ -3,7 +3,11 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
-import { BadRequestError, NotFoundError } from "../core/error.response.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  ForbiddenError,
+} from "../core/error.response.js";
 import path from "path";
 import { randomUUID } from "crypto";
 import { config } from "../config/env.config.js";
@@ -34,22 +38,31 @@ export const getPresignedUrl = async (key) => {
   return getSignedUrl(r2Client, command, { expiresIn: PRESIGNED_URL_TTL });
 };
 
-export const getFileUrl = async (uploadId) => {
+export const createFileDownload = async (upload) => ({
+  id: upload.id,
+  originalName: upload.original_name,
+  mimeType: upload.mime_type,
+  url: await getPresignedUrl(upload.r2_key),
+  expiresIn: PRESIGNED_URL_TTL,
+});
+
+const findOwnedStandaloneUpload = async (uploadId, userId) => {
   const upload = await uploadRepository.findById(uploadId);
 
   if (!upload) {
     throw new NotFoundError("File not found");
   }
 
-  const url = await getPresignedUrl(upload.r2_key);
+  if (upload.lesson_id !== null || upload.uploaded_by !== userId) {
+    throw new ForbiddenError("You do not have access to this file");
+  }
 
-  return {
-    id: upload.id,
-    originalName: upload.original_name,
-    mimeType: upload.mime_type,
-    url,
-    expiresIn: PRESIGNED_URL_TTL,
-  };
+  return upload;
+};
+
+export const getFileUrl = async (uploadId, userId) => {
+  const upload = await findOwnedStandaloneUpload(uploadId, userId);
+  return createFileDownload(upload);
 };
 
 export const uploadR2 = async (file, folder = "image") => {
@@ -91,6 +104,12 @@ export const deleteImgFromR2 = async (key) => {
   });
 
   await r2Client.send(command);
+};
+
+export const deleteUpload = async (uploadId, userId) => {
+  const upload = await findOwnedStandaloneUpload(uploadId, userId);
+  await deleteImgFromR2(upload.r2_key);
+  await uploadRepository.deleteById(upload.id);
 };
 
 export const uploadImage = async (file, userId) => {

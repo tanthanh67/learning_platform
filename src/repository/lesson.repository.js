@@ -78,3 +78,17 @@ export const deleteById = async (id) => {
   );
   return result.rows[0] || null;
 };
+
+export const findMetadataByLessonId = async (lessonId) => {
+  const { rows } = await pool.query(
+    `
+      SELECT id, original_name, mime_type, size_bytes, created_at
+      FROM uploads
+      WHERE lesson_id = $1
+      ORDER BY id
+    `,
+    [lessonId],
+  );
+
+  return rows;
+};
