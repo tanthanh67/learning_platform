@@ -3,6 +3,7 @@ export const sendSuccess = (
   statusCode = 200,
   message = "Success",
   data = null,
+  pagination,
 ) => {
   const response = {
     statusCode,
@@ -12,6 +13,10 @@ export const sendSuccess = (
 
   if (data !== null && data !== undefined) {
     response.data = data;
+  }
+
+  if (pagination !== undefined) {
+    response.pagination = pagination;
   }
 
   return res.status(statusCode).json(response);

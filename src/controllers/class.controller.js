@@ -1,11 +1,24 @@
 import * as classService from "../services/class.service.js";
+import { getClassAnalytics as loadClassAnalytics } from "../services/classAccess.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import { sendSuccess } from "../utils/responseHelper.js";
 
 export const getAllClasses = catchAsync(async (req, res) => {
-  const classes = await classService.getAllClasses(req.query, req.user.id);
+  const { page = "1", limit = "10", sortBy, order } = req.query;
+  const currentPage = Number(page);
+  const pageSize = Number(limit);
 
-  return sendSuccess(res, 200, "Classes retrieved succesfully", classes);
+  const { items, total } = await classService.getAllClasses(
+    { page: currentPage, limit: pageSize, sortBy, order },
+    req.user.id,
+  );
+
+  return sendSuccess(res, 200, "Classes retrieved successfully", items, {
+    page: currentPage,
+    limit: pageSize,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  });
 });
 
 export const getClassById = catchAsync(async (req, res) => {
@@ -33,4 +46,15 @@ export const deleteClass = catchAsync(async (req, res) => {
   const deletedClass = await classService.deleteClass(req.params.id);
 
   return sendSuccess(res, 200, "Class deleted successfully", deletedClass);
+});
+
+export const getClassAnalytics = catchAsync(async (req, res) => {
+  const analytics = await loadClassAnalytics(req.params.id, req.user.id);
+
+  return sendSuccess(
+    res,
+    200,
+    "Class analytics retrieved successfully",
+    analytics,
+  );
 });

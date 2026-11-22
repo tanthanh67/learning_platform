@@ -44,3 +44,28 @@ export const ensureMember = (access) => {
     );
   }
 };
+
+const percent = (count, total) =>
+  total === 0 ? 0 : Math.round((count / total) * 100);
+
+export const getClassAnalytics = async (classId, userId) => {
+  const access = await getClassAccess(classId, userId);
+
+  if (!access.canReadAll && !access.isMentor) {
+    throw new ForbiddenError("You do not have access to this class analytics");
+  }
+
+  const stats = await classRepository.findAnalyticsByClassId(classId);
+
+  return {
+    lessonCompletionRate: percent(
+      stats.completed_count,
+      stats.member_count * stats.lesson_count,
+    ),
+    submissionRate: percent(
+      stats.submitted_count,
+      stats.member_count * stats.assignment_count,
+    ),
+    averageScore: stats.average_score,
+  };
+};

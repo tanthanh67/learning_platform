@@ -24,32 +24,50 @@ const buildOrderBy = ({ sortBy = "id", order = "ASC" }) => {
     throw new BadRequestError(`Invalid sort order: ${order}`);
   }
 
-  return `ORDER BY c.${sortBy} ${order}`;
+  const orderBy = `ORDER BY c.${sortBy} ${order}`;
+  return sortBy === "id" ? orderBy : `${orderBy}, c.id ASC`;
 };
 
-export const findAll = async (query) => {
-  const result = await pool.query(
-    `SELECT ${CLASS_COLUMNS} FROM classes c ${buildOrderBy(query)}`,
-  );
-  return result.rows;
-};
+const findPage = async (query, where = "", values = []) => {
+  const { page, limit } = query;
+  const offset = (page - 1) * limit;
+  const limitParam = values.length + 1;
+  const offsetParam = values.length + 2;
 
-export const findAllForUser = async (userId, query) => {
-  const result = await pool.query(
+  const { rows } = await pool.query(
     `
-      SELECT ${CLASS_COLUMNS}
-      FROM classes c
-      WHERE c.mentor_id = $1
-         OR EXISTS (
-           SELECT 1 FROM class_members cm
-           WHERE cm.class_id = c.id AND cm.member_id = $1
-         )
-      ${buildOrderBy(query)}
+      WITH visible_classes AS (
+        SELECT ${CLASS_COLUMNS}
+        FROM classes c
+        ${where}
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM visible_classes) AS total,
+        ARRAY(
+          SELECT row_to_json(c)
+          FROM visible_classes c
+          ${buildOrderBy(query)}
+          LIMIT $${limitParam} OFFSET $${offsetParam}
+        ) AS items
     `,
+    [...values, limit, offset],
+  );
+
+  return rows[0];
+};
+
+export const findAll = (query) => findPage(query);
+
+export const findAllForUser = (userId, query) =>
+  findPage(
+    query,
+    `WHERE c.mentor_id = $1
+       OR EXISTS (
+         SELECT 1 FROM class_members cm
+         WHERE cm.class_id = c.id AND cm.member_id = $1
+       )`,
     [userId],
   );
-  return result.rows;
-};
 
 export const findById = async (id) => {
   const result = await pool.query(
@@ -114,4 +132,44 @@ export const deleteById = async (id) => {
     [id],
   );
   return result.rows[0] || null;
+};
+
+export const findAnalyticsByClassId = async (classId) => {
+  const { rows } = await pool.query(
+    `
+    WITH current_members AS (
+      SELECT member_id FROM class_members WHERE class_id = $1
+    ),
+    class_lessons AS (
+      SELECT id FROM lessons WHERE class_id = $1
+    ),
+    class_assignments AS (
+      SELECT id FROM assignments WHERE class_id = $1
+    ),
+    submission_stats AS (
+      SELECT
+        COUNT(*)::int AS submitted_count,
+        ROUND(AVG(s.score), 2) AS average_score
+      FROM submissions s
+      JOIN class_assignments a ON a.id = s.assignment_id
+      JOIN current_members cm ON cm.member_id = s.member_id
+    )
+    SELECT
+      (SELECT COUNT(*)::int FROM current_members) AS member_count,
+      (SELECT COUNT(*)::int FROM class_lessons) AS lesson_count,
+      (SELECT COUNT(*)::int FROM class_assignments) AS assignment_count,
+      (
+        SELECT COUNT(*)::int
+        FROM lesson_progress lp
+        JOIN class_lessons l ON l.id = lp.lesson_id
+        JOIN current_members cm ON cm.member_id = lp.member_id
+      ) AS completed_count,
+      submitted_count,
+      average_score
+    FROM submission_stats
+    `,
+    [classId],
+  );
+
+  return rows[0];
 };
