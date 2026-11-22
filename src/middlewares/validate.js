@@ -58,6 +58,13 @@ export const idParamRules = [
     .toInt(),
 ];
 
+export const userRoleParamRules = [
+  ...idParamRules,
+  param("roleName")
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Role name must be between 1 and 50 characters"),
+];
+
 export const attachmentIdParamRules = [
   param("attachmentId")
     .isInt({ min: 1, max: 2147483647 })

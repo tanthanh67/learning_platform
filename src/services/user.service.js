@@ -15,6 +15,18 @@ export const getUserById = async (userId) => {
   return user;
 };
 
+export const getRoles = () => userRepository.findRoles();
+
+export const getUserRoles = async (userId) => {
+  const user = await userRepository.findUserRoles(userId);
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+  return user;
+};
+
+export const changeUserRole = (change) => userRepository.changeRole(change);
+
 export const addUser = async ({ name, email, password, age }) => {
   const existingUser = await userRepository.findByEmail(email);
   if (existingUser) {
@@ -62,12 +74,9 @@ export const updateUser = async (userId, { name, email, password, age }) => {
 };
 
 export const deleteUser = async (userId) => {
-  const id = Number(userId);
-
-  const existingUser = await userRepository.findById(id);
-  if (!existingUser) {
+  const deletedUser = await userRepository.deleteById(Number(userId));
+  if (!deletedUser) {
     throw new NotFoundError("User not found");
   }
-
-  return await userRepository.deleteById(id);
+  return deletedUser;
 };

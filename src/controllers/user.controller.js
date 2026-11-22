@@ -14,6 +14,36 @@ export const getUserById = catchAsync(async (req, res) => {
   return sendSuccess(res, 200, "User retrieved successfully", user);
 });
 
+export const getRoles = catchAsync(async (req, res) => {
+  const roles = await userService.getRoles();
+  return sendSuccess(res, 200, "Roles retrieved successfully", roles);
+});
+
+export const getUserRoles = catchAsync(async (req, res) => {
+  const userRoles = await userService.getUserRoles(req.params.id);
+  return sendSuccess(res, 200, "User roles retrieved successfully", userRoles);
+});
+
+export const grantRole = catchAsync(async (req, res) => {
+  const userRoles = await userService.changeUserRole({
+    actorId: req.user.id,
+    userId: req.params.id,
+    roleName: req.params.roleName,
+    grant: true,
+  });
+  return sendSuccess(res, 200, "Role granted successfully", userRoles);
+});
+
+export const revokeRole = catchAsync(async (req, res) => {
+  const userRoles = await userService.changeUserRole({
+    actorId: req.user.id,
+    userId: req.params.id,
+    roleName: req.params.roleName,
+    grant: false,
+  });
+  return sendSuccess(res, 200, "Role revoked successfully", userRoles);
+});
+
 export const addUser = catchAsync(async (req, res) => {
   const newUser = await userService.addUser(req.body);
 
